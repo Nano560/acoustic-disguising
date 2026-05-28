@@ -21,7 +21,7 @@ authors:
     affiliation: "Institute of Geophysics, ETH Zürich, Switzerland"
 version: 1.0.0
 # doi: 10.5281/zenodo.XXXXXXX  # TODO: fill in after first Zenodo release
-date-released: 2026-XX-XX
+date-released: 2026-05-28
 license: MIT
 repository-code: "https://github.com/Nano560/acoustic-disguising"
 preferred-citation:
