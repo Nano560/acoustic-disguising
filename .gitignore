@@ -1,0 +1,54 @@
+# ---- Generated simulation outputs ----
+# These are large and fully regenerable from the code — do not commit.
+results/
+figures/output/
+*.h5
+*.hdf5
+*.jld2
+*.npz
+*.vtk
+*.vti
+*.vtr
+
+# ---- Editor / OS ----
+.DS_Store
+.vscode/
+.idea/
+.claude/
+*.swp
+*~
+
+# iCloud sync-conflict shadow files (pattern: "foo 2.py", "bar 2.jl")
+* 2.*
+
+# ---- Julia ----
+/deps/deps.jl
+/deps/build.log
+*.jl.cov
+*.jl.*.cov
+*.jl.mem
+LocalPreferences.toml
+docs/build/
+docs/site/
+Manifest.toml.bak
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/
+.env
+
+# ---- Misc ----
+*.log
+scratch/
+
+# ---- Personal notebooks (runbooks, scratch analyses) ----
+# Notebooks are heavy with embedded outputs and rarely make for clean
+# diffs. Reserve `notebooks/` for personal / per-run notebooks; cheaper
+# than picking which to commit.
+notebooks/

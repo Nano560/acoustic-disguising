@@ -1,0 +1,206 @@
+# =============================================================================
+# Single source of truth for the pipeline. Each stage reads ONE table named
+# after itself ([greens], [reverb], [hologram], [mdd]), plus the shared
+# [grid] / [surfaces] / [pml] / [output] blocks below. Stage tables can
+# carry [<stage>.grid] and [<stage>.pml] sub-tables to override the shared
+# values for that stage only (see scripts/greens/, scripts/hologram/synthesize.jl).
+# =============================================================================
+
+# `scatterer` and `plotting` must stay at root level — keep ABOVE any
+# [section] header, otherwise TOML attaches them to that section.
+plotting = true # set false to skip live diagnostic plots (HDF5 saves
+scatterer = "all" # one of: none, sphere, cube, cross, all
+# and progress logging are unaffected)
+
+# ---- Shared: Grid (paper baseline) ----
+# Used as-is by [hologram] and [reverb] (both can override via their own
+# .grid sub-tables). The [greens] stage overrides this whole block via
+# [greens.grid].
+[grid]
+cf = 0.5 # Courant factor
+n = 501 # grid points per axis (cubic domain); paper used 401³
+xmax = 1.1 # half-extent in x [m] — production hologram box
+ymax = 1.1 # half-extent in y [m]
+zmax = 1.1 # half-extent in z [m]
+
+# ---- Shared: Inner / outer control surfaces ----
+# Scatterer shape dimensions live in src/geometry.jl (`SCATTERER_DEFAULTS`).
+# To override one for an experiment, add `sphere_radius = …`,
+# `square_length = …`, or `cross_length = …` here.
+[surfaces]
+nPoints_inner = 400 # Fibonacci-sphere discretisation; paper used 320
+nPoints_outer = 400 
+radius_inner = 0.2 # [m]
+radius_outer = 0.3 # [m]
+
+# ---- Shared: Convolutional Perfectly Matched Layer ----
+# `n = 0` disables CPML at zero compute cost (box walls become hard
+# reflectors) — exploited by both [greens.pml] and [reverb.pml].
+[pml]
+fc = 10.0e3 # centre frequency [Hz]
+n = 0 # layer thickness (grid points)
+rcoef = 1.0e-4 # target reflection coefficient
+
+# NOTE: there is no [output] block. The pipeline derives all output paths
+# from the run directory passed on the CLI (every script takes a positional
+# `<run_dir>` argument). Subdirs under the run dir are hardcoded:
+#   <run_dir>/{config.toml, greens, reverb, holograms, figures, figure_data}
+# Convention: this cfg lives at `<run_dir>/config.toml` inside the run.
+
+# =============================================================================
+# Stage tables — one per pipeline script
+# =============================================================================
+
+# ---- Greens stage (impulsive / analytical) ----
+# Drives scripts/greens/{impulsive,analytical}.jl.
+# The GF box is bigger than the hologram box: `duration` is short enough
+# that waves can't round-trip off the walls in time (earliest wall-
+# reflection arrival = (2·xmax − r_out − r_in)/c0 ≈ 0.80 ms at xmax = 0.85
+# vs duration = 0.70 ms). With reflections out of reach, PML is unnecessary.
+[greens]
+duration = 7.0e-4 # FDTD propagation time [s]
+nt_save = 300 # output sample count of saved GF tensor (downsampled
+# from the FDTD's internal nt)
+f_3db_hz = 12000.0 # Gaussian source-time function: -3 dB cutoff [Hz].
+# σ_t = √(ln 2)/(2π·f_3db_hz); pulse_length is derived as
+# 10·σ_t/dt_fdtd. Increasing this widens the GF spectrum but
+# requires a finer grid (n scales ∝ f_3db_hz to preserve
+# points-per-wavelength) — see [greens.grid].
+
+[greens.grid]
+n = 301 # preserve GF-stage dx (≈ 5.67e-3); independent of the
+# hologram box's grid.
+xmax = 0.85
+ymax = 0.85
+zmax = 0.85
+
+[greens.pml]
+n = 0
+
+# ---- Reverb stage ----
+# Drives scripts/greens/reverb.jl. Letting waves reflect off the box walls
+# turns the box into the reverberant cavity; [reverb.pml].n = 0 keeps it
+# closed.
+#
+# Reverb-stage grid sizing: dx and box-radius are set independently in
+# [reverb.grid]. dx is set by `ppw` (points-per-wavelength at fc_source):
+# dx = c0/(fc_source·ppw). Without ppw, the reverb stage inherits root dx.
+# xmax is set by `margin_cells`: xmax = radius_ill + margin_cells·dx
+# (resolution-aware — wraps the ill sphere with a fixed cell clearance).
+# Alternative: omit `margin_cells` and pin xmax/ymax/zmax explicitly. If
+# both are present, margin_cells wins. Per-step cost ∝ n³, total cost
+# ∝ n³·nt ∝ xmax⁵ when nt is sized to N round-trips at fixed dx.
+#
+# Sources on an ill sphere at `radius_ill`, outside both control surfaces.
+# The ill sphere uses Roberts' r2 low-discrepancy sequence (position i
+# depends only on i), so bumping nPoints_ill keeps existing iSrc positions
+# fixed and the saved state file can be extended in place. Inner / outer
+# control surfaces always use Fibonacci (K-H quadrature needs the stricter
+# uniformity).
+#
+# Optional dense-recording mode: lay receivers on Fibonacci spheres at
+# `nPoints_*_record`; the MDD stage interpolates back down to the
+# production [surfaces].nPoints_* at load time. Useful for testing wave-
+# field separation methods at angular resolutions above the production
+# hologram's. Set equal to the [surfaces] counts to disable.
+#
+# `checkpoint_field = true` enables the sidecar resume / extend feature
+# (storage cost up to hundreds of GB; off by default).
+[reverb]
+checkpoint_field = false 
+duration = 300.0e-4 # FDTD propagation time [s] (cavity ringdown)
+fc_source = 12.0e3 # Ricker centre frequency [Hz]
+fs_out = 60.0e3 # output sample rate [Hz] (resampled from FDTD dt)
+nPoints_ill = 300 
+# nPoints_inner_record = 1000
+# nPoints_outer_record = 1000
+radius_ill = 0.45 # [m]
+
+[reverb.grid]
+margin_cells = 4 # box clearance in cells of the ppw-derived dx
+ppw = 19 # points-per-wavelength at fc_source → dx = c0/(fc_source·ppw)
+
+[reverb.pml]
+n = 0
+
+# ---- Hologram stage ----
+# Drives scripts/hologram/synthesize.jl. Visualization-only knobs (slice offset,
+# initial-wave distance, source amplitude) live in the script itself, not
+# here.
+[hologram]
+duration = 8e-4 # synthesis time [s] — covers paper-figure times t1=5.5e-4
+# and t2=7.0e-4 with margin.
+# snapshot_every = N → save the three orthogonal pressure slice planes
+# every N FDTD steps to the hologram .h5 (in addition to field_final), for
+# the wavefield-slice movie pipeline. Slice-only (not full field), so each
+# snapshot is small: ~3·n²·4 bytes ≈ 750 kB at n = 251. 0 disables (default
+# — zero overhead).
+snapshot_every = 2 # ~ 167 frames at nt = 669, ~ 35 MB on disk
+# slice_offsets_m: vector of world-space offsets (metres) of the saved slice
+# planes from origin. One full set of (xSlice, ySlice, zSlice) snapshots is
+# saved per offset; the offset axis is preserved in the H5. First entry is
+# the "primary" offset read by the figure-rendering pipeline — -0.3 puts
+# the cut planes on the far side of origin from the +X+Y+Z Blender camera
+# so the scatterer isn't occluded. The 0.0 entry adds the centreline cuts.
+slice_offsets_m = [-0.3, 0.0]
+
+# ---- Scattering stage ----
+# Drives scripts/scattering/acquire.jl. One FDTD run per (scatterer, source)
+# pair, recording pressure + normal velocity at a third Fibonacci sphere of
+# passive receivers at `radius_farfield`. Postprocess subtracts the
+# matching `none` baseline, integrates
+# `∫p_scat²(t) dt` per receiver, and exports polar-tikz + 3D-surface plot data.
+#
+# Box / PML sizing: the box is enlarged vs the [hologram] domain so the
+# far-field sphere sits comfortably inside, and PML is enabled so reflected
+# wall returns don't contaminate the time integral. With c0=1500 m/s, fc=4kHz,
+# scatterer ~0.3 m: r_ff = 1.0 m gives kr≈17 (far field), the scattered pulse
+# clears r_ff by ~1.5 ms; duration=1.6 ms keeps the integral on clean signal.
+[scattering]
+duration = 1.6e-3 # FDTD propagation time [s]
+nPoints_farfield = 1500 # Fibonacci samples on the sphere
+radius_farfield = 1.0 # far-field receiver-sphere radius [m]
+
+[scattering.grid]
+n = 545 # preserves dx≈5.5e-3 (matches root [grid].cf)
+xmax = 1.5 
+ymax = 1.5 
+zmax = 1.5 
+
+[scattering.pml]
+fc = 4.0e3 # match incident-Ricker centre frequency
+n = 10 # PML thickness [grid points]
+rcoef = 1.0e-4 
+
+# ---- MDD parameters (Python side) ----
+# Drives python/mdd/. Wave-field separation method on the outer shell —
+# see docs/wavefield_separation.md for the bandwidth / accuracy tradeoffs
+# of "sht", "normal_incidence", "local_pw", "local_pvn" and which parameter
+# group applies.
+[mdd]
+atol = 1.0e-12 # LSQR atol
+btol = 1.0e-12 # LSQR btol
+damp = 1.0e-4 # Tikhonov damping
+fmax_hz = 30.0e3 # cap the frequency band MDD inverts over [Hz]
+iter_lim = 50 # LSQR iteration cap
+separation_method = "normal_incidence" 
+tmax_out = 3.0e-3 # truncate output GFs in time [s]
+
+# Active when separation_method = "sht".
+# n_max is auto-derived from n_outer via the angular-Nyquist heuristic
+# n_max ≈ 0.6·√n_outer (Saff & Kuijlaars 1997 bound for Fibonacci
+# sampling). Set explicitly to override; omit (or comment out) to
+# auto-resolve at decomposition time. See
+# python/mdd/wavefield_separation.py::auto_n_max.
+[mdd.sht]
+beta_max = 20.0 # per-(n, ω) magnitude cap on β_n(kr); 20 = clean-data default
+# n_max = 12   # ← omitted: auto-resolves from n_outer at call time
+reg = 1.0e-6 # Tikhonov damping on the SH least-squares projection
+
+# Active when separation_method ∈ {"local_pw", "local_pvn"}.
+[mdd.local_pw]
+k_cap = 0.95 # radial wavenumber cap (fraction of k)
+n_azimuth = 4 # azimuthal samples per ring
+n_radial = 2 # radial rings of plane-wave directions
+patch_size = 40 # K nearest neighbours per shell per patch
+reg = 1.0e-1 # Tikhonov damping for the per-patch LS solve

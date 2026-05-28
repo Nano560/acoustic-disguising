@@ -1,0 +1,96 @@
+# =============================================================================
+# Tiny CPU-runnable cfg. Validates that the pipeline runs end-to-end in a
+# few minutes on a laptop; not for physically meaningful results. Use
+# `configs/paper.toml` for paper-scale runs.
+#
+# Same block layout as paper.toml — see that file for the full prose
+# documentation of each section.
+# =============================================================================
+
+plotting = false   # skip per-stage diagnostic figures (fast & headless)
+scatterer = "none"  # smoke test only exercises the homogeneous case (no scatterer)
+
+# ---- Shared: Grid (small enough to run on a laptop) ----
+[grid]
+cf = 0.5
+n = 51             # 51³ ≈ 130k cells (vs paper's 301³ ≈ 27M)
+xmax = 0.4
+ymax = 0.4
+zmax = 0.4
+
+# ---- Shared: Inner / outer control surfaces ----
+[surfaces]
+nPoints_inner = 24
+nPoints_outer = 24
+radius_inner = 0.15
+radius_outer = 0.25
+
+# ---- Shared: PML (closed box; no absorption) ----
+[pml]
+fc = 10.0e3
+n = 0
+rcoef = 1.0e-4
+
+# NOTE: no [output] block — output paths derive from the run dir passed
+# on the CLI. See INSTALL.md for the run-dir layout.
+
+# =============================================================================
+# Stage tables
+# =============================================================================
+
+# ---- Greens stage ----
+[greens]
+duration = 4.0e-4
+nt_save = 60
+f_3db_hz = 7000.0
+
+[greens.grid]
+n = 51
+xmax = 0.45
+ymax = 0.45
+zmax = 0.45
+
+[greens.pml]
+n = 0
+
+# ---- Reverb stage ----
+[reverb]
+bandwidth_factor = 2.5   # Ricker band to cover (×fc_source); fs_out = 2·bandwidth_factor·fc_source
+checkpoint_field = false
+duration = 5.0e-3        # ~few wall round-trips at xmax=0.30
+fc_source = 12.0e3
+nPoints_ill = 12
+radius_ill = 0.32        # outside both control surfaces (radius_outer=0.25)
+
+[reverb.grid]
+ppw = 18                 # points-per-wavelength at fc_source → dx = c0/(fc_source·ppw)
+margin_cells = 4         # box clearance in cells of the ppw-derived dx
+
+[reverb.pml]
+n = 0
+
+# ---- Hologram stage ----
+[hologram]
+duration = 4.0e-4
+snapshot_every = 0       # disable slice-plane snapshots in smoke runs
+slice_offsets_m = [0.0]
+
+# ---- Disguise stage (optional; defaults to [hologram] knobs) ----
+# Drives scripts/disguise/synthesize.jl. Outer-surface sources from the GF of
+# a target scatterer B, interior mask from the real scatterer A → outer-surface
+# reads as B's signature while A is the actual geometry. Uncomment to override
+# [hologram].{duration, snapshot_every, slice_offsets_m}; [disguise.grid] /
+# [disguise.pml] sub-tables override the shared blocks the same way the other
+# stages do.
+# [disguise]
+# duration = 4.0e-4
+
+# ---- MDD parameters ----
+[mdd]
+atol = 1.0e-12
+btol = 1.0e-12
+damp = 1.0e-4
+# fmax_hz omitted → defaults to [reverb].bandwidth_factor · fc_source
+iter_lim = 5             # converges fast on a tiny system
+separation_method = "normal_incidence"
+tmax_out = 1.0e-3

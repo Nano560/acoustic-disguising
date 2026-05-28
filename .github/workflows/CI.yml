@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  julia-test:
+    # NOTE: the paper runs on a CUDA GPU, but GitHub-hosted runners don't
+    # have GPUs. CI here only validates that the package instantiates and
+    # the CPU backend works on a tiny grid. The full paper-scale pipeline
+    # is expected to run on the author's GPU workstation.
+    runs-on: ubuntu-latest
+    env:
+      ACOUSTIC_CLONING_BACKEND: Threads
+    steps:
+      - uses: actions/checkout@v4
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: "1.10"
+      - uses: julia-actions/cache@v2
+      - uses: julia-actions/julia-buildpkg@v1
+      - uses: julia-actions/julia-runtest@v1
+
+  python-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e .[dev]
+      - run: python -c "import mdd; print(mdd.__version__)"
+      # TODO: add pytest suite once mdd.py is implemented

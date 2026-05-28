@@ -1,0 +1,39 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite both the software and the accompanying paper."
+title: "Acoustic Disguising: Green's function extraction and hologram synthesis"
+abstract: >-
+  Julia and Python code accompanying the paper "Acoustic disguising: a
+  unified framework for cloaking and holography".
+  Generates acoustic Green's functions either from an impulsive point source
+  or by extracting them from reverberating data via Multi-Dimensional
+  Deconvolution (MDD), and uses them to synthesise acoustic holograms.
+type: software
+authors:
+  - family-names: Müller
+    given-names: Jonas
+    email: jmuller.research@gmail.com
+    orcid: "https://orcid.org/0000-0003-4530-2486"
+    affiliation: "Institute of Geophysics, ETH Zürich, Switzerland"
+    website: "https://jmullerresearch.ch/"
+  - family-names: van Manen
+    given-names: Dirk-Jan
+    orcid: "https://orcid.org/0000-0002-8250-2826"
+    affiliation: "Institute of Geophysics, ETH Zürich, Switzerland"
+version: 1.0.0
+# doi: 10.5281/zenodo.XXXXXXX  # TODO: fill in after first Zenodo release
+date-released: 2026-XX-XX
+license: MIT
+repository-code: "https://github.com/Nano560/acoustic-disguising"
+preferred-citation:
+  type: article
+  title: "Acoustic disguising: a unified framework for cloaking and holography"
+  authors:
+    - family-names: Müller
+      given-names: Jonas
+    - family-names: van Manen
+      given-names: Dirk-Jan
+  journal: "Physical Review Research"
+  year: 2026
+  # volume: X
+  # issue: X
+  # doi: TODO

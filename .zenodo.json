@@ -1,0 +1,38 @@
+{
+  "title": "Acoustic Disguising: Green's function extraction and hologram synthesis",
+  "description": "Julia and Python code accompanying the paper 'Acoustic disguising: a unified framework for cloaking and holography'. Generates acoustic Green's functions from an impulsive point source or extracts them from reverberating data via Multi-Dimensional Deconvolution (MDD), and synthesises acoustic holograms from the Green's functions.",
+  "upload_type": "software",
+  "access_right": "open",
+  "license": "MIT",
+  "keywords": [
+    "acoustics",
+    "wave propagation",
+    "Green's function",
+    "multi-dimensional deconvolution",
+    "acoustic hologram",
+    "FDTD",
+    "GPU",
+    "Julia",
+    "reproducibility"
+  ],
+  "creators": [
+    {
+      "name": "Müller, Jonas",
+      "affiliation": "Institute of Geophysics, ETH Zürich, Switzerland",
+      "orcid": "0000-0003-4530-2486"
+    },
+    {
+      "name": "van Manen, Dirk-Jan",
+      "affiliation": "Institute of Geophysics, ETH Zürich, Switzerland",
+      "orcid": "0000-0002-8250-2826"
+    }
+  ],
+  "related_identifiers": [
+    {
+      "scheme": "doi",
+      "identifier": "TODO",
+      "relation": "isSupplementTo",
+      "resource_type": "publication-article"
+    }
+  ]
+}
