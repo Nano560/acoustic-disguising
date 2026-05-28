@@ -6,7 +6,7 @@ Companion code to:
 > Jonas Müller and Dirk-Jan van Manen, 2026.
 > DOI: [TODO](https://doi.org/TODO) <!-- TODO: fill in after acceptance -->
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX) <!-- TODO: fill in after first Zenodo release -->
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20433700.svg)](https://doi.org/10.5281/zenodo.20433700)
 
 This repository reproduces every numerical result and figure in the
 accompanying paper. Acoustic disguising has two stages: first the Green's
@@ -205,7 +205,7 @@ cite both the paper and the archived software release:
   title     = {Acoustic Disguising: Green's function retrieval and hologram synthesis},
   version   = {1.0.0},
   year      = {2026},
-  doi       = {10.5281/zenodo.XXXXXXX},
+  doi       = {10.5281/zenodo.20433700},
   publisher = {Zenodo}
 }
 ```

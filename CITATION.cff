@@ -20,7 +20,7 @@ authors:
     orcid: "https://orcid.org/0000-0002-8250-2826"
     affiliation: "Institute of Geophysics, ETH Zürich, Switzerland"
 version: 1.0.0
-# doi: 10.5281/zenodo.XXXXXXX  # TODO: fill in after first Zenodo release
+doi: 10.5281/zenodo.20433700
 date-released: 2026-05-28
 license: MIT
 repository-code: "https://github.com/Nano560/acoustic-disguising"
