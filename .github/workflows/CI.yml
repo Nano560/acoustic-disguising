@@ -14,12 +14,12 @@ jobs:
     # is expected to run on the author's GPU workstation.
     runs-on: ubuntu-latest
     env:
-      ACOUSTIC_CLONING_BACKEND: Threads
+      ACOUSTIC_DISGUISING_BACKEND: Threads
     steps:
       - uses: actions/checkout@v4
       - uses: julia-actions/setup-julia@v2
         with:
-          version: "1.10"
+          version: "1.12"
       - uses: julia-actions/cache@v2
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
